@@ -1,45 +1,14 @@
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
-from PIL import Image
+from qwen25 import doqwen25
+from qwen2 import doqwen2
 
-# Load the model and processor
-model = Qwen2VLForConditionalGeneration.from_pretrained("Qwen/Qwen2-VL-2B-Instruct", torch_dtype="auto", device_map="auto")
-processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-2B-Instruct")
 
-image = Image.open("/testImage/label1.jpg")
+prompt = '''
+This is an image of a wine label. Using the text in the image, answer the following questions: 
+What alcohol percentage is the wine?
+What varietal is the wine?
+What region and country was the wine produced in?
+What preservative might be contained?
+Answer in JSON format.
+'''
 
-messages = [
-    {
-        "role": "user",
-        "content": [
-            {
-                "type": "image",
-            },
-            {
-                "type": "text",
-                "text": "This is an image of a wine label. Using the text in the image, where is this wine from?"
-            }
-        ]
-    }
-]
-
-text_prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
-
-inputs = processor(
-    text=[text_prompt],
-    images=[image],
-    padding=True,
-    return_tensors="pt"
-)
-
-inputs = inputs.to("cuda")  # Move to GPU if available
-
-output_ids = model.generate(**inputs, max_new_tokens=1024)
-generated_ids = [
-    output_ids[len(input_ids):]
-    for input_ids, output_ids in zip(inputs.input_ids, output_ids)
-]
-
-output_text = processor.batch_decode(
-    generated_ids, skip_special_tokens=True, clean_up_tokenization_spaces=True
-)
-print(output_text)
+doqwen25("https://www.toptastes.co.nz/wp-content/uploads/2018/08/Thornbury-Sauvignon-Blanc-2018-back-label.jpg-642x1030.jpg", prompt)
